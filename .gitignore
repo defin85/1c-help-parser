@@ -1,0 +1,71 @@
+# Исходные файлы документации (большие)
+data/*.hbk
+data/*.zip
+data/rebuilt.*
+
+# Промежуточные файлы парсинга
+data/bsl_syntax*.json
+data/bsl_syntax*.md
+data/hbk_analysis.json
+
+# Результаты конвертации
+data/1c_context*.json
+data/1c_context*.txt
+data/1c_search_index*.json
+data/1c_summary*.json
+
+# Разбивка по категориям
+data/context_chunks/
+
+# Временные файлы
+data/extracted/
+*.tmp
+*.temp
+
+# Логи
+*.log
+
+# Кэш Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Виртуальные окружения
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Дополнительные файлы данных
+data/*.bak
+data/*.backup
+data/*.old
+data/temp/
+data/tmp/ 
