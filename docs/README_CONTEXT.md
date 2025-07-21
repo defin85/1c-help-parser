@@ -27,7 +27,7 @@
 │       └── optimized_demo.py          # Демо оптимизированного контекста
 ├── data/
 │   ├── rebuilt.shcntx_ru.zip          # Восстановленный архив (38MB)
-│   ├── 1c_context_optimized.json      # Оптимизированный контекст (3.5MB)
+│   ├── 1c_context_optimized.json      # Оптимизированный контекст (5.2MB)
 │   └── hbk_analysis.json              # Анализ структуры (2KB)
 └── run.py                             # Главный скрипт
 ```
