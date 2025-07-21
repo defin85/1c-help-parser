@@ -55,7 +55,7 @@ def cleanup_data():
     
     print("✅ Очистка завершена")
 
-def run_parser(zip_file, max_files=500):
+def run_parser(zip_file, max_files=500, use_improved=True):
     """Запускает парсинг файла"""
     print(f"🔍 Анализ структуры: {zip_file}")
     os.system(f"set PYTHONPATH=src && python src/parsers/hbk_parser.py {zip_file}")

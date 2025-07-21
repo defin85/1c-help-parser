@@ -73,6 +73,171 @@ class BSLSyntaxExtractor(BaseParser):
         
         return {'type': '', 'description': ''}
     
+    def extract_object_methods(self, soup) -> List[Dict[str, str]]:
+        """Извлекает методы объекта из документации"""
+        methods = []
+        
+        # Ищем секцию "Методы"
+        for elem in soup.find_all('p', class_='V8SH_chapter'):
+            text = elem.get_text(strip=True)
+            if 'Методы' in text:
+                # Ищем список методов
+                current = elem
+                while current:
+                    current = current.find_next_sibling()
+                    if current and current.name == 'ul':
+                        # Нашли список методов
+                        for li in current.find_all('li'):
+                            method_text = li.get_text(strip=True)
+                            if method_text:
+                                # Извлекаем название метода и английский эквивалент
+                                if '(' in method_text and ')' in method_text:
+                                    method_name = method_text[:method_text.find('(')].strip()
+                                    english_name = method_text[method_text.find('(')+1:method_text.find(')')].strip()
+                                    methods.append({
+                                        'name': method_name,
+                                        'english_name': english_name,
+                                        'full_name': method_text
+                                    })
+                                else:
+                                    methods.append({
+                                        'name': method_text,
+                                        'english_name': '',
+                                        'full_name': method_text
+                                    })
+                        break
+                    elif current and current.name == 'p' and 'V8SH_chapter' in current.get('class', []):
+                        # Останавливаемся на следующем заголовке
+                        break
+        
+        # Если методы не найдены в списке, ищем ссылки на методы
+        if not methods:
+            seen_methods = set()  # Для избежания дублирования
+            for link in soup.find_all('a'):
+                href = link.get('href', '')
+                text = link.get_text(strip=True)
+                if 'methods/' in href and text:
+                    # Извлекаем название метода из ссылки
+                    method_name = text
+                    english_name = ''
+                    
+                    # Пытаемся найти английское название в скобках
+                    if '(' in text and ')' in text:
+                        method_name = text[:text.find('(')].strip()
+                        english_name = text[text.find('(')+1:text.find(')')].strip()
+                    
+                    # Проверяем, не добавляли ли мы уже этот метод
+                    method_key = f"{method_name}_{english_name}"
+                    if method_key not in seen_methods:
+                        methods.append({
+                            'name': method_name,
+                            'english_name': english_name,
+                            'full_name': text
+                        })
+                        seen_methods.add(method_key)
+        
+        return methods
+    
+    def extract_collection_elements(self, soup) -> Dict[str, str]:
+        """Извлекает информацию об элементах коллекции"""
+        elements_info = {}
+        
+        # Ищем секцию "Элементы коллекции"
+        for elem in soup.find_all('p', class_='V8SH_chapter'):
+            text = elem.get_text(strip=True)
+            if 'Элементы коллекции' in text:
+                # Получаем весь HTML между заголовками
+                html_content = ""
+                current = elem
+                
+                while current:
+                    current = current.find_next_sibling()
+                    if current and current.name == 'p' and 'V8SH_chapter' in current.get('class', []):
+                        # Останавливаемся на следующем заголовке
+                        break
+                    elif current:
+                        html_content += str(current)
+                
+                # Парсим HTML и извлекаем текст
+                if html_content:
+                    section_soup = BeautifulSoup(html_content, 'html.parser')
+                    full_text = section_soup.get_text(strip=True)
+                    
+                    # Разбиваем на предложения и фильтруем
+                    sentences = []
+                    for sentence in full_text.split('.'):
+                        sentence = sentence.strip()
+                        if sentence and not any(keyword in sentence for keyword in ['Методы', 'Описание', 'Доступность', 'См. также', 'Использование в версии']):
+                            sentences.append(sentence)
+                    
+                    if sentences:
+                        # Формируем полное описание с информацией об использовании
+                        full_description = []
+                        
+                        # Добавляем тип элементов
+                        if sentences:
+                            full_description.append(sentences[0])  # Первое предложение - тип элементов
+                        
+                        # Добавляем информацию об обходе и индексации
+                        for sentence in sentences[1:]:
+                            if any(keyword in sentence for keyword in ['Для каждого', 'Из', 'Цикл', 'индекс', 'оператор']):
+                                full_description.append(sentence)
+                        
+                        elements_info['description'] = '. '.join(full_description)
+                        
+                        # Дополнительно сохраняем информацию об использовании
+                        usage_info = []
+                        for sentence in sentences:
+                            if any(keyword in sentence for keyword in ['Для каждого', 'Из', 'Цикл', 'индекс', 'оператор']):
+                                usage_info.append(sentence)
+                        
+                        if usage_info:
+                            elements_info['usage'] = '. '.join(usage_info)
+                
+                # Дополнительно ищем информацию об использовании во всем HTML
+                full_html = str(soup)
+                if 'Для каждого' in full_html:
+                    # Извлекаем предложения с информацией об использовании
+                    usage_sentences = []
+                    
+                    # Ищем предложения с ключевыми словами
+                    for keyword in ['Для каждого', 'индекс', 'оператор']:
+                        if keyword in full_html:
+                            # Находим контекст вокруг ключевого слова
+                            start = full_html.find(keyword)
+                            if start > 0:
+                                # Извлекаем предложение
+                                sentence_start = full_html.rfind('.', 0, start) + 1
+                                sentence_end = full_html.find('.', start)
+                                if sentence_end > start:
+                                    sentence = full_html[sentence_start:sentence_end].strip()
+                                    # Очищаем от HTML тегов
+                                    sentence = BeautifulSoup(sentence, 'html.parser').get_text(strip=True)
+                                    # Дополнительная очистка от лишнего текста
+                                    if 'html' in sentence:
+                                        sentence = sentence.split('html')[-1]
+                                    if '">' in sentence:
+                                        sentence = sentence.split('">')[-1]
+                                    if sentence and sentence not in usage_sentences:
+                                        usage_sentences.append(sentence)
+                    
+                    if usage_sentences:
+                        # Очищаем от дублирования типа элемента
+                        cleaned_usage = []
+                        for sentence in usage_sentences:
+                            # Убираем упоминание типа элемента из начала предложения
+                            if elements_info.get('description') and elements_info['description'] in sentence:
+                                sentence = sentence.replace(elements_info['description'], '').strip()
+                            # Убираем лишние символы в начале
+                            if sentence.startswith('Для'):
+                                cleaned_usage.append(sentence)
+                        
+                        if cleaned_usage:
+                            elements_info['usage'] = '. '.join(cleaned_usage)
+                break
+        
+        return elements_info
+    
     def extract_syntax_info(self, html_content: str, filename: str) -> Dict[str, Any]:
         """Извлекает информацию о синтаксисе из HTML-файла"""
         try:
@@ -89,7 +254,9 @@ class BSLSyntaxExtractor(BaseParser):
                 'category': '',
                 'links': [],
                 'availability': [],
-                'version': ''
+                'version': '',
+                'methods': [],
+                'collection_elements': {}
             }
             
             # Извлекаем заголовок
@@ -311,6 +478,12 @@ class BSLSyntaxExtractor(BaseParser):
                     if table:
                         result['example'] = table.get_text(strip=True)
                     break
+            
+            # Извлекаем методы объекта
+            result['methods'] = self.extract_object_methods(soup)
+            
+            # Извлекаем элементы коллекции
+            result['collection_elements'] = self.extract_collection_elements(soup)
             
             # Извлекаем ссылки
             for link in soup.find_all('a'):

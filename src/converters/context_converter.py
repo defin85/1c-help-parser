@@ -33,62 +33,24 @@ class ContextConverter(BaseConverter):
             'metadata': {
                 'filename': info.get('filename', ''),
                 'syntax': info.get('syntax', ''),
+                'syntax_variants': info.get('syntax_variants', []),
                 'parameters': info.get('parameters', []),
+                'parameters_by_variant': info.get('parameters_by_variant', {}),
                 'return_value': info.get('return_value', ''),
-                'links': info.get('links', [])
+                'example': info.get('example', ''),
+                'links': info.get('links', []),
+                'collection_elements': info.get('collection_elements', {}),
+                'methods': info.get('methods', []),
+                'availability': info.get('availability', []),
+                'version': info.get('version', '')
             }
         }
         
-        # Формируем основной контент
-        content_parts = []
-        
-        # Заголовок
-        content_parts.append(f"# {title}")
-        
-        # Синтаксис (поддержка множественных вариантов)
-        if info.get('syntax_variants'):
-            content_parts.append("\n## Синтаксис")
-            for variant in info['syntax_variants']:
-                content_parts.append(f"\n### {variant['variant_name']}\n```bsl\n{variant['syntax']}\n```")
-        elif info.get('syntax'):
-            content_parts.append(f"\n## Синтаксис\n```bsl\n{info['syntax']}\n```")
-        
-        # Описание
+        # Формируем основной контент - только описание
         if info.get('description'):
-            description = super().clean_text(info['description'])
-            content_parts.append(f"\n## Описание\n{description}")
-        
-        # Параметры (поддержка множественных вариантов)
-        if info.get('parameters_by_variant'):
-            content_parts.append("\n## Параметры")
-            for variant_name, params in info['parameters_by_variant'].items():
-                content_parts.append(f"\n### {variant_name}")
-                for param in params:
-                    optional = "(необязательный)" if param.get('optional') else "(обязательный)"
-                    param_type = param.get('type', '')
-                    param_desc = param.get('description', '')
-                    param_line = f"- {param['name']} {optional}"
-                    if param_type:
-                        param_line += f": {param_type}"
-                    if param_desc:
-                        param_line += f" - {param_desc}"
-                    content_parts.append(param_line)
-        elif info.get('parameters'):
-            content_parts.append("\n## Параметры")
-            for param in info['parameters']:
-                content_parts.append(f"- {param['name']}")
-        
-        # Возвращаемое значение
-        if info.get('return_value'):
-            return_val = super().clean_text(info['return_value'])
-            content_parts.append(f"\n## Возвращаемое значение\n{return_val}")
-        
-        # Пример
-        if info.get('example'):
-            example = super().clean_text(info['example'])
-            content_parts.append(f"\n## Пример\n```bsl\n{example}\n```")
-        
-        context_item['content'] = '\n'.join(content_parts)
+            context_item['content'] = super().clean_text(info['description'])
+        else:
+            context_item['content'] = ""
         return context_item
     
     def convert_to_context(self) -> List[Dict[str, Any]]:

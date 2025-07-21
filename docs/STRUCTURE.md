@@ -63,10 +63,25 @@
 - **`hbk_analysis.json`** - Анализ структуры архивов
 
 ### Контекст для LLM
-- **`1c_context.json`** - Структурированный контекст
-- **`1c_context.txt`** - Текстовый контекст
+- **`1c_context.json`** - Структурированный контекст (content + metadata)
+- **`1c_context.txt`** - Текстовый контекст для LLM
 - **`1c_search_index.json`** - Поисковый индекс
 - **`1c_summary.json`** - Краткое резюме
+
+### Структура контекста
+```json
+{
+  "content": "Краткое описание объекта",
+  "metadata": {
+    "syntax_variants": [],           // Варианты синтаксиса
+    "parameters_by_variant": {},     // Параметры по вариантам
+    "collection_elements": {},       // Информация о коллекциях
+    "methods": [],                   // Методы объекта
+    "availability": [],              // Доступность
+    "version": ""                    // Версия
+  }
+}
+```
 
 ### Разбивка по категориям
 - **`context_chunks/objects_context.txt`** - Объекты

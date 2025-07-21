@@ -68,7 +68,7 @@ python run.py --demo data/1c_context_optimized.json
 ## Форматы файлов
 
 ### 1. JSON Context (`1c_context.json`)
-Структурированный формат с метаданными:
+Структурированный формат с разделением на content и metadata:
 
 ```json
 {
@@ -83,13 +83,20 @@ python run.py --demo data/1c_context_optimized.json
       "id": "objects_0",
       "title": "Глобальный контекст",
       "category": "objects",
-      "content": "# Глобальный контекст\n\n## Описание\n...",
+      "content": "Краткое описание объекта",
       "metadata": {
         "filename": "objects/catalog125.html",
         "syntax": "",
+        "syntax_variants": [],
         "parameters": [],
+        "parameters_by_variant": {},
         "return_value": "",
-        "links": []
+        "example": "",
+        "links": [],
+        "collection_elements": {},
+        "methods": [],
+        "availability": [],
+        "version": ""
       }
     }
   ]
