@@ -526,7 +526,7 @@ class BSLSyntaxExtractor(BaseParser):
             # По умолчанию добавляем в объекты
             self.syntax_data['objects'][title] = syntax_info
     
-    def extract_all_syntax(self, max_files: int = 1000) -> Dict[str, Any]:
+    def extract_all_syntax(self, max_files: int = None) -> Dict[str, Any]:
         """Извлекает синтаксис из всех HTML-файлов"""
         if not self.zip_file:
             return {}
@@ -534,10 +534,16 @@ class BSLSyntaxExtractor(BaseParser):
         html_files = [f for f in self.zip_file.namelist() if f.endswith('.html')]
         
         print(f"Найдено {len(html_files)} HTML файлов")
-        print(f"Обрабатываем первые {min(max_files, len(html_files))} файлов...")
+        
+        if max_files:
+            print(f"Обрабатываем первые {min(max_files, len(html_files))} файлов...")
+            files_to_process = html_files[:max_files]
+        else:
+            print(f"Обрабатываем все {len(html_files)} файлов...")
+            files_to_process = html_files
         
         processed = 0
-        for filename in html_files[:max_files]:
+        for filename in files_to_process:
             try:
                 # Читаем содержимое файла
                 content = self.zip_file.read(filename).decode('utf-8', errors='ignore')
@@ -626,7 +632,7 @@ class BSLSyntaxExtractor(BaseParser):
         
         print(f"Данные экспортированы в {filename}")
     
-    def parse(self, max_files: int = 1000, **kwargs) -> Dict[str, Any]:
+    def parse(self, max_files: int = None, **kwargs) -> Dict[str, Any]:
         """Реализация абстрактного метода parse"""
         return self.extract_all_syntax(max_files)
 
@@ -634,7 +640,7 @@ def main():
     """Основная функция"""
     parser = argparse.ArgumentParser(description='Экстрактор синтаксиса BSL из файлов справки 1С')
     parser.add_argument('hbk_file', help='Путь к .hbk файлу')
-    parser.add_argument('--max-files', type=int, default=1000, help='Максимальное количество файлов для обработки')
+    parser.add_argument('--max-files', type=int, help='Максимальное количество файлов для обработки (по умолчанию - все файлы)')
     parser.add_argument('--output', default='data/bsl_syntax.json', help='Путь к выходному JSON файлу')
     
     args = parser.parse_args()

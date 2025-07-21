@@ -46,6 +46,12 @@ python run.py
 # Автоматический режим (без интерактивного ввода)
 python run.py --auto
 
+# Полная обработка всей документации
+python run.py --full
+
+# Создание оптимизированной версии (приоритетные элементы)
+python run.py --optimized
+
 # Обработка конкретного файла
 python run.py --file data/rebuilt.shcntx_ru.zip
 
