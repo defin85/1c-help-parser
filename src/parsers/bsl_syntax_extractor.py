@@ -241,7 +241,15 @@ class BSLSyntaxExtractor(BaseParser):
     def extract_syntax_info(self, html_content: str, filename: str) -> Dict[str, Any]:
         """Извлекает информацию о синтаксисе из HTML-файла"""
         try:
+            # Проверяем входные данные
+            if not html_content:
+                return {'filename': filename, 'error': 'Empty HTML content'}
+            
             soup = super().parse_html_content(html_content)
+            
+            # Проверяем, что soup создался корректно
+            if soup is None:
+                return {'filename': filename, 'error': 'Failed to parse HTML content'}
             
             result = {
                 'filename': filename,
@@ -416,8 +424,12 @@ class BSLSyntaxExtractor(BaseParser):
                         if desc_elem and desc_elem.name == 'br':
                             # Описание идет после <br>
                             desc_text = desc_elem.next_sibling
-                            if desc_text:
+                            if desc_text and isinstance(desc_text, str):
                                 param_info['description'] = desc_text.strip()
+                            elif desc_text and hasattr(desc_text, 'get_text'):
+                                # Если это HTML элемент, извлекаем текст
+                                param_info['description'] = desc_text.get_text(strip=True)
+                            # Если desc_text is None, просто пропускаем описание
                         
                         # Ищем ссылку на тип
                         type_link = block.find_next('a')
@@ -498,6 +510,9 @@ class BSLSyntaxExtractor(BaseParser):
             
         except Exception as e:
             print(f"Ошибка при извлечении синтаксиса из {filename}: {e}")
+            # Добавляем дополнительную диагностику
+            import traceback
+            print(f"Детали ошибки: {traceback.format_exc()}")
             return {'filename': filename, 'error': str(e)}
     
     def categorize_syntax(self, syntax_info: Dict[str, Any]) -> None:
@@ -548,8 +563,18 @@ class BSLSyntaxExtractor(BaseParser):
                 # Читаем содержимое файла
                 content = self.zip_file.read(filename).decode('utf-8', errors='ignore')
                 
+                # Проверяем, что контент не пустой
+                if not content.strip():
+                    print(f"Пропускаем пустой файл: {filename}")
+                    continue
+                
                 # Извлекаем информацию о синтаксисе
                 syntax_info = self.extract_syntax_info(content, filename)
+                
+                # Проверяем на ошибки
+                if 'error' in syntax_info:
+                    print(f"Ошибка в файле {filename}: {syntax_info['error']}")
+                    continue
                 
                 # Категоризируем
                 self.categorize_syntax(syntax_info)
@@ -560,6 +585,9 @@ class BSLSyntaxExtractor(BaseParser):
                 
             except Exception as e:
                 print(f"Ошибка при обработке файла {filename}: {e}")
+                import traceback
+                print(f"Детали ошибки: {traceback.format_exc()}")
+                continue
         
         print(f"Обработка завершена. Обработано {processed} файлов.")
         

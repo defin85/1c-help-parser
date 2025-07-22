@@ -229,6 +229,42 @@ def create_optimized_version():
     
     print(f"Текстовая версия сохранена: {txt_file}")
 
+def create_max_split_version(max_file_size_kb=50, max_items_per_file=50, verbose=False):
+    """Создает максимальную версию в разбитом виде"""
+    print("Создание максимальной разбитой версии...")
+    
+    # Проверяем наличие основного файла
+    if not os.path.exists("data/1c_context.json"):
+        print("❌ Файл data/1c_context.json не найден!")
+        print("Сначала запустите парсинг документации")
+        return
+    
+    try:
+        from src.converters.max_split_converter import MaxSplitConverter
+        converter = MaxSplitConverter("data/1c_context.json", max_file_size_kb, max_items_per_file, verbose)
+        converter.convert()
+        print("✅ Максимальная разбитая версия создана: data/max_split/")
+    except Exception as e:
+        print(f"❌ Ошибка при создании максимальной разбитой версии: {e}")
+
+def create_optimized_split_version(max_file_size_kb=50, max_items_per_file=50, verbose=False):
+    """Создает оптимизированную версию в разбитом виде"""
+    print("Создание оптимизированной разбитой версии...")
+    
+    # Проверяем наличие основного файла
+    if not os.path.exists("data/1c_context.json"):
+        print("❌ Файл data/1c_context.json не найден!")
+        print("Сначала запустите парсинг документации")
+        return
+    
+    try:
+        from src.converters.optimized_split_converter import OptimizedSplitConverter
+        converter = OptimizedSplitConverter("data/1c_context.json", max_file_size_kb, max_items_per_file, verbose)
+        converter.convert()
+        print("✅ Оптимизированная разбитая версия создана: data/optimized_split/")
+    except Exception as e:
+        print(f"❌ Ошибка при создании оптимизированной разбитой версии: {e}")
+
 def run_demo(context_file):
     """Запускает демонстрацию"""
     if "optimized" in context_file:
@@ -251,6 +287,14 @@ def main():
     parser.add_argument("--full", action="store_true", help="Обработать всю документацию (все файлы)")
     parser.add_argument("--optimized", action="store_true", help="Создать оптимизированную версию (приоритетные элементы)")
     parser.add_argument("--basic", action="store_true", help="Использовать базовую версию парсера")
+    parser.add_argument("--mode", choices=["max", "optimized", "max-split", "optimized-split"], 
+                       default="optimized", help="Режим экспорта")
+    parser.add_argument("--max-file-size", type=int, default=50,
+                       help="Максимальный размер файла в KB (для split режимов)")
+    parser.add_argument("--max-items-per-file", type=int, default=50,
+                       help="Максимальное количество элементов на файл (для split режимов)")
+    parser.add_argument("--verbose", "-v", action="store_true", 
+                       help="Подробный вывод (показывать каждый экспортированный файл)")
     
     args = parser.parse_args()
     
@@ -289,12 +333,31 @@ def main():
         print("🚀 Полная обработка - все файлы документации")
         run_parser("data/rebuilt.shcntx_ru.zip", max_files=None)
     
-    # Оптимизированная версия
+    # Обработка устаревших флагов
     elif args.optimized:
-        print("🎯 Создание оптимизированной версии")
+        print("🎯 Создание оптимизированной версии (1 файл)")
         create_optimized_version()
     
-    # Интерактивный режим
+    # Обработка режимов экспорта (только если явно указан --mode)
+    elif args.mode and args.mode != "optimized":  # Проверяем, что режим явно указан
+        if args.mode == "max":
+            print("📊 Создание максимальной версии (1 файл)")
+            # Максимальная версия уже создана при парсинге
+            if os.path.exists("data/1c_context.json"):
+                print("✅ Максимальная версия уже существует: data/1c_context.json")
+            else:
+                print("❌ Сначала создайте полную версию: python run.py --full")
+        elif args.mode == "optimized":
+            print("🎯 Создание оптимизированной версии (1 файл)")
+            create_optimized_version()
+        elif args.mode == "max-split":
+            print("📊 Создание максимальной разбитой версии")
+            create_max_split_version(args.max_file_size, args.max_items_per_file, args.verbose)
+        elif args.mode == "optimized-split":
+            print("🎯 Создание оптимизированной разбитой версии")
+            create_optimized_split_version(args.max_file_size, args.max_items_per_file, args.verbose)
+    
+    # Интерактивный режим (когда нет других аргументов)
     else:
         # Проверка зависимостей для интерактивного режима
         check_dependencies()
@@ -302,26 +365,35 @@ def main():
         print("\n🎯 Выберите действие:")
         print("1. Обработать документацию (shcntx_ru.zip) - первые 500 файлов")
         print("2. Обработать всю документацию (shcntx_ru.zip) - все файлы")
-        print("3. Создать оптимизированную версию (приоритетные элементы)")
-        print("4. Демонстрация оптимизированного контекста")
-        print("5. Проверить зависимости")
-        print("6. Очистить ненужные файлы")
+        print("3. Создать оптимизированную версию (1 файл)")
+        print("4. Создать максимальную разбитую версию (множество файлов)")
+        print("5. Создать оптимизированную разбитую версию (множество файлов)")
+        print("6. Демонстрация оптимизированного контекста")
+        print("7. Проверить зависимости")
+        print("8. Очистить ненужные файлы")
         print("0. Выход")
         
-        choice = input("\nВведите номер (0-6): ").strip()
+        choice = input("\nВведите номер (0-8): ").strip()
         
         if choice == "1":
             run_parser("data/rebuilt.shcntx_ru.zip", max_files=500)
         elif choice == "2":
             run_parser("data/rebuilt.shcntx_ru.zip", max_files=None)
         elif choice == "3":
-            print("🎯 Создание оптимизированной версии")
             create_optimized_version()
         elif choice == "4":
-            run_demo("data/1c_context_optimized.json")
+            create_max_split_version()
         elif choice == "5":
-            print("✅ Зависимости уже проверены выше")
+            create_optimized_split_version()
         elif choice == "6":
+            if os.path.exists("data/1c_context_optimized.json"):
+                run_demo("data/1c_context_optimized.json")
+            else:
+                print("❌ Файл data/1c_context_optimized.json не найден!")
+                print("Сначала создайте оптимизированную версию")
+        elif choice == "7":
+            check_dependencies()
+        elif choice == "8":
             cleanup_data()
         elif choice == "0":
             print("👋 До свидания!")

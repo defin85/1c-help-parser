@@ -16,10 +16,12 @@ from datetime import datetime
 class BaseConverter(ABC):
     """Базовый класс для всех конвертеров"""
     
-    def __init__(self, input_file: str):
+    def __init__(self, input_file: str, verbose: bool = False):
         self.input_file = input_file
         self.data = {}
-        
+        self.verbose = verbose
+        self.exported_files = []  # Для группировки логов
+    
     def load_data(self) -> bool:
         """Загружает данные из JSON файла"""
         try:
@@ -57,7 +59,13 @@ class BaseConverter(ABC):
             self.ensure_directory(filename)
             with open(filename, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-            print(f"Данные экспортированы в {filename}")
+            
+            # Сохраняем информацию о файле для группировки
+            self.exported_files.append(filename)
+            
+            # Выводим лог в зависимости от режима
+            if self.verbose:
+                print(f"Данные экспортированы в {filename}")
         except Exception as e:
             print(f"Ошибка при экспорте в JSON: {e}")
     
@@ -67,9 +75,58 @@ class BaseConverter(ABC):
             self.ensure_directory(filename)
             with open(filename, 'w', encoding='utf-8') as f:
                 f.write(data)
-            print(f"Данные экспортированы в {filename}")
+            
+            # Сохраняем информацию о файле для группировки
+            self.exported_files.append(filename)
+            
+            # Выводим лог в зависимости от режима
+            if self.verbose:
+                print(f"Данные экспортированы в {filename}")
         except Exception as e:
             print(f"Ошибка при экспорте в текст: {e}")
+    
+    def show_export_summary(self):
+        """Показывает сводку экспортированных файлов"""
+        if not self.exported_files:
+            return
+        
+        # Группируем файлы по категориям
+        categories = {}
+        for filename in self.exported_files:
+            # Извлекаем категорию из пути
+            parts = filename.split(os.sep)
+            if len(parts) >= 2:
+                category = parts[-2]  # Предпоследняя часть пути
+            else:
+                category = "other"
+            
+            if category not in categories:
+                categories[category] = []
+            categories[category].append(filename)
+        
+        # Выводим сводку
+        print(f"📁 Экспортировано файлов: {len(self.exported_files)}")
+        for category, files in sorted(categories.items()):
+            print(f"   📂 {category}: {len(files)} файлов")
+            
+            # Показываем детали для малых категорий
+            if len(files) <= 3:
+                for file in files:
+                    filename = os.path.basename(file)
+                    print(f"      {filename}")
+            else:
+                # Показываем первые и последние файлы
+                for file in files[:2]:
+                    filename = os.path.basename(file)
+                    print(f"      {filename}")
+                if len(files) > 4:
+                    print(f"      ... ({len(files)-4} файлов) ...")
+                for file in files[-2:]:
+                    filename = os.path.basename(file)
+                    print(f"      {filename}")
+        
+        # Очищаем список для следующего использования
+        self.exported_files = []
     
     def create_search_index(self, items: List[Dict[str, Any]]) -> Dict[str, List[str]]:
         """Создает поисковый индекс по ключевым словам"""

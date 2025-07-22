@@ -16,6 +16,8 @@ data/1c_summary*.json
 
 # Разбивка по категориям
 data/context_chunks/
+data/max_split/
+data/optimized_split/
 
 # Временные файлы
 data/extracted/
